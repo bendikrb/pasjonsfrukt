@@ -141,4 +141,8 @@ def callback(
     """
     Scrape PodMe podcast streams to mp3 and host with RSS feed
     """
-    logging.basicConfig(level=get_logging_level(verbose, debug))
+    logging.basicConfig(
+        level=get_logging_level(verbose, debug),
+        format="%(asctime)s [%(name)-25.25s] [%(levelname)-8.8s]  %(message)s",
+    )
+

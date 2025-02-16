@@ -10,6 +10,8 @@ from podme_api import (
     PodMeEpisode,
     PodMePodcast,
 )
+from podme_api.models import PodMeDownloadProgressTask
+from podme_api.exceptions import PodMeApiNotFoundError
 from rfeed import (
     Item,
     Guid,
@@ -50,10 +52,14 @@ async def harvest_podcast(client: PodMeClient, config: Config, slug: str):
         )
         return
     most_recent_episodes_limit = config.podcasts[slug].most_recent_episodes_limit
-    if most_recent_episodes_limit is None:
-        episodes = await client.get_episode_list(slug)
-    else:
-        episodes = await client.get_latest_episodes(slug, most_recent_episodes_limit)
+    try:
+        if most_recent_episodes_limit is None:
+            episodes = await client.get_episode_list(slug)
+        else:
+            episodes = await client.get_latest_episodes(slug, most_recent_episodes_limit)
+    except PodMeApiNotFoundError:
+        episodes=[]
+        _LOGGER.warning(f"Podcast not found: {slug}")
 
     if len(episodes) == 0:
         _LOGGER.warning(f"Could not find any published episodes for '{slug}'")
@@ -86,7 +92,7 @@ async def harvest_podcast(client: PodMeClient, config: Config, slug: str):
         for episode_id, url in download_urls
     ]
 
-    def log_progress(url: str, progress: int, total: int):
+    def log_progress(task: PodMeDownloadProgressTask, url: str, progress: int, total: int):
         percentage = int(100 * progress / total)
         _LOGGER.debug(f"Downloading from {url}: {percentage}%")
 
